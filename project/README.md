@@ -6,7 +6,7 @@ backend expone `POST /api/solve` y el frontend reproduce el plan resultante en
 una simulación 3D.
 
 <p align="center">
-  <img src="docs/costonito.png" alt="Costoñito, el robot de mantenimiento, con su sombrero vueltiao" width="360">
+  <img src="assets/costonito.png" alt="Costoñito, el robot de mantenimiento, con su sombrero vueltiao" width="360">
   <br>
   <em><strong>Costoñito</strong> — el robot de mantenimiento que ejecuta el plan.</em>
 </p>
@@ -27,6 +27,7 @@ project/
 ├── frontend/          # React + TypeScript + Vite + React Three Fiber
 ├── scenarios/
 │   └── scenario.json  # instancia demo — fuente de verdad
+├── assets/            # imágenes del README
 ├── design.md
 └── README.md
 ```
