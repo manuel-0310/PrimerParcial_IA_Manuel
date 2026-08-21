@@ -1,35 +1,42 @@
 # Backend — Emergency Control
 
-Python API that exposes `POST /api/solve`.
+API en FastAPI que expone `POST /api/solve`. Recibe un escenario y devuelve el
+plan de **menor costo** que satisface la meta, o `FAILURE` si no existe.
 
-The default implementation returns a **demo plan** (no search / no AI) so the
-frontend can be tested end-to-end. Students replace the solve handler with
-their search agent. Do not «fix» `scenario.json` (capacity, battery, rooms)
-to make UCS finish: formulate `Applicable` instead. See `project/design.md`.
+> Las instrucciones completas de instalación, ejecución e interpretación están
+> en [`../README.md`](../README.md). Este archivo es solo una referencia rápida
+> de la estructura interna.
 
-## Run
+## Módulos
+
+| Archivo | Responsabilidad |
+|---|---|
+| `src/state.py` | Representación canónica del estado y las funciones de transición |
+| `src/problem.py` | Constantes derivadas del escenario, estado inicial y prueba de meta |
+| `src/actions.py` | `Applicable(s)` — generación de sucesores y política de `PICKUP`/`DROP` |
+| `src/search.py` | UCS sobre Graph Search, con dominancia de batería en CLOSED |
+| `src/translate.py` | Nodo meta → pasos del contrato cerrado (`CONTRATO.md` §3) |
+| `src/main.py` | El endpoint |
+| `src/simulator.py` | Re-simulador de referencia usado por los tests |
+| `src/demo_plan.py` | Plan artesanal del repositorio base, conservado como referencia de costo |
+
+El diseño que sustenta cada decisión está en [`../design.md`](../design.md).
+
+## Ejecutar
 
 ```bash
 cd project/backend
-python -m venv .venv
-# Windows:
-.venv\Scripts\activate
-# macOS/Linux:
-# source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn src.main:app --reload --app-dir src --port 8000
+source .venv/bin/activate        # .\.venv\Scripts\activate en Windows
+uvicorn main:app --app-dir src --port 8000
 ```
 
-Or from `backend/src`:
-
-```bash
-cd project/backend/src
-uvicorn main:app --reload --port 8000
-```
+Añada `--reload` si va a editar el código.
 
 ## Tests
 
 ```bash
-cd project/backend
-python tests/test_demo_plan.py
+python tests/run_all.py
 ```
+
+Los cinco casos del Entregable 3 más los tests de apoyo. Requiere el entorno
+virtual activado. Ver [`../README.md`](../README.md#validación--entregable-3).

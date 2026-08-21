@@ -1,3 +1,4 @@
+import { createSpeechDirector, failureLine, incompleteLine, successLine } from './dialogue'
 import { applyStep, checkGoal, sleep } from './executor'
 import { cellToWorld } from './grid'
 import { useSimStore } from '../store/simStore'
@@ -11,11 +12,15 @@ const MS_PER_CELL = 420
 const MS_PER_RAD = 220
 const ACTION_PAUSE_MS = 180
 
-export async function fetchPlan(scenario: Scenario): Promise<SolveResponse> {
+export async function fetchPlan(
+  scenario: Scenario,
+  signal?: AbortSignal,
+): Promise<SolveResponse> {
   const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(scenario),
+    signal,
   })
   if (!res.ok) {
     throw new Error(`API error ${res.status}: ${await res.text()}`)
@@ -32,6 +37,7 @@ export async function runPlan(): Promise<void> {
   store.appendLog({ text: `[---] Executing plan (${plan.length} steps)...`, level: 'info' })
 
   let current = runtime
+  const director = createSpeechDirector()
 
   for (let i = 0; i < plan.length; i++) {
     if (!useSimStore.getState().running) break
@@ -42,6 +48,8 @@ export async function runPlan(): Promise<void> {
     if (!result.ok) {
       store.appendLog({ text: `[${idx}] ERROR: ${result.message}`, level: 'error' })
       store.setError(result.message)
+      const oops = failureLine(result.message)
+      store.say(oops.text, oops.tone, oops.hold)
       store.setRunning(false)
       return
     }
@@ -58,6 +66,9 @@ export async function runPlan(): Promise<void> {
     store.applyRuntime(result.runtime)
     store.setStepIndex(i + 1)
     store.appendLog({ text: `[${idx}] ${result.message}`, level: 'ok' })
+    if (step.op === 'PICKUP') store.triggerPickupHop()
+    const line = director.lineFor(scenario, step, current, result.runtime, i)
+    if (line) store.say(line.text, line.tone, line.hold)
     current = result.runtime
 
     await sleep(ACTION_PAUSE_MS / Math.max(0.25, useSimStore.getState().speed))
@@ -68,11 +79,16 @@ export async function runPlan(): Promise<void> {
       text: `[***] MISSION COMPLETE — all stations ONLINE (spent ${current.energySpent})`,
       level: 'ok',
     })
+    const victory = successLine()
+    store.say(victory.text, victory.tone, victory.hold)
+    store.startCelebration()
   } else {
     store.appendLog({
       text: `[***] Plan finished but goal NOT satisfied`,
       level: 'warn',
     })
+    const shrug = incompleteLine()
+    store.say(shrug.text, shrug.tone, shrug.hold)
   }
   store.setRunning(false)
   store.setAnim([], null)

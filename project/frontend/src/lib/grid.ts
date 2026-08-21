@@ -22,6 +22,32 @@ export function buildWalkable(layout: ScenarioLayout): Set<string> {
   return set
 }
 
+export interface WalkableBounds {
+  minX: number
+  maxX: number
+  minZ: number
+  maxZ: number
+  cellSize: number
+}
+
+/** World-space bounding box of every walkable cell — shared by lighting, floor, and ambient effects. */
+export function computeWalkableBounds(layout: ScenarioLayout): WalkableBounds {
+  const cs = layout.cell_size
+  let minX = Infinity
+  let maxX = -Infinity
+  let minZ = Infinity
+  let maxZ = -Infinity
+  for (const key of buildWalkable(layout)) {
+    const [gx, gz] = key.split(',').map(Number)
+    const [x, , z] = cellToWorld(gx, gz, cs, 0)
+    minX = Math.min(minX, x)
+    maxX = Math.max(maxX, x)
+    minZ = Math.min(minZ, z)
+    maxZ = Math.max(maxZ, z)
+  }
+  return { minX, maxX, minZ, maxZ, cellSize: cs }
+}
+
 export function cellToWorld(
   gx: number,
   gz: number,

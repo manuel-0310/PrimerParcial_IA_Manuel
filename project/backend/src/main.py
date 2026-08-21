@@ -1,4 +1,4 @@
-"""FastAPI backend — demo solver for frontend integration testing."""
+"""API del agente: POST /api/solve devuelve el plan de menor costo."""
 
 from __future__ import annotations
 
@@ -9,7 +9,9 @@ from typing import Any
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from demo_plan import build_demo_plan
+from problem import Problem
+from search import SearchLimitExceeded, solve as run_search
+from translate import build_steps
 
 app = FastAPI(title="Emergency Control API", version="1.0.0")
 
@@ -41,10 +43,37 @@ def get_scenario() -> dict[str, Any]:
 
 @app.post("/api/solve")
 def solve(scenario: dict[str, Any]) -> dict[str, Any]:
-    """Return a demo plan consistent with the provided scenario.
-
-    Students replace this with a real UCS/search agent. The response contract
-    must remain: solution_found, total_cost, steps[{op, cost, ...}].
-    """
+    """Resuelve el escenario recibido. Formato de respuesta en CONTRATO.md §2."""
     data = scenario if scenario else _load_default_scenario()
-    return build_demo_plan(data)
+    problem = Problem.from_scenario(data)
+
+    try:
+        goal_node = run_search(problem)
+    except SearchLimitExceeded as exc:
+        # No es el FAILURE del enunciado: no se llegó a determinar si hay plan.
+        return {
+            "solution_found": False,
+            "total_cost": 0,
+            "steps": [],
+            "message": (
+                f"Búsqueda detenida por presupuesto ({exc}) — no se pudo determinar "
+                "si existe plan. No equivale a FAILURE."
+            ),
+        }
+
+    if goal_node is None:
+        return {
+            "solution_found": False,
+            "total_cost": 0,
+            "steps": [],
+            "message": "No existe un plan válido para esta misión (FAILURE).",
+        }
+
+    steps = build_steps(goal_node)
+    total_cost = sum(int(s["cost"]) for s in steps)
+    return {
+        "solution_found": True,
+        "total_cost": total_cost,
+        "steps": steps,
+        "message": "Plan generado por UCS (Graph Search con dominancia de batería).",
+    }

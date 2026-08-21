@@ -73,10 +73,10 @@ def apply_step(scenario: dict[str, Any], state: dict[str, Any], step: dict[str, 
 
     if op == "PICKUP":
         item = step["item"]
-        assert payload_weight(state["payload"]) + 1 <= cap, "cargo full"
         if item in state["ground_keys"]:
             assert state["ground_keys"][item] == state["zone"]
             key = next(k for k in scenario["keys"] if k["id"] == item)
+            assert payload_weight(state["payload"]) + key["weight"] <= cap, "cargo full"
             spend(state, cost, bat_max)
             del state["ground_keys"][item]
             state["payload"].append(
@@ -86,6 +86,7 @@ def apply_step(scenario: dict[str, Any], state: dict[str, Any], step: dict[str, 
         if item in state["ground_tools"]:
             assert state["ground_tools"][item] == state["zone"]
             tool = next(t for t in scenario["tools"] if t["id"] == item)
+            assert payload_weight(state["payload"]) + tool["weight"] <= cap, "cargo full"
             spend(state, cost, bat_max)
             del state["ground_tools"][item]
             state["payload"].append(
@@ -100,11 +101,15 @@ def apply_step(scenario: dict[str, Any], state: dict[str, Any], step: dict[str, 
         if item in state["ground_materials"]:
             mat = state["ground_materials"][item]
             assert mat["zone"] == state["zone"] and mat["count"] > 0
+            mat_weight = next(
+                m["weight"] for m in scenario["materials"] if m["type"] == item
+            )
+            assert payload_weight(state["payload"]) + mat_weight <= cap, "cargo full"
             spend(state, cost, bat_max)
             mat["count"] -= 1
             if mat["count"] <= 0:
                 del state["ground_materials"][item]
-            state["payload"].append({"kind": "material", "type": item, "weight": 1})
+            state["payload"].append({"kind": "material", "type": item, "weight": mat_weight})
             return
         raise AssertionError(f"Item {item} not on ground in {state['zone']}")
 

@@ -1,8 +1,13 @@
 import { OrbitControls } from '@react-three/drei'
-import { useMemo } from 'react'
-import { buildWalkable, cellKey, cellToWorld, generateWalls } from '../lib/grid'
+import { useEffect, useMemo, useRef } from 'react'
+import { Object3D } from 'three'
+import type { DirectionalLight } from 'three'
+import { buildWalkable, cellKey, cellToWorld, computeWalkableBounds, generateWalls } from '../lib/grid'
 import { useSimStore } from '../store/simStore'
 import type { Scenario } from '../types'
+import { AmbientDust } from './AmbientDust'
+import { Confetti } from './Confetti'
+import { Effects } from './Effects'
 import { Robot } from './Robot'
 import {
   ChargerVoxel,
@@ -90,7 +95,7 @@ function Floors() {
   return (
     <group>
       {tiles.map((t) => (
-        <mesh key={t.key} position={[t.x, -0.05, t.z]}>
+        <mesh key={t.key} position={[t.x, -0.05, t.z]} receiveShadow>
           <boxGeometry args={[t.cs * 0.98, 0.1, t.cs * 0.98]} />
           <meshStandardMaterial color={t.color} roughness={0.85} />
         </mesh>
@@ -105,7 +110,7 @@ function Walls() {
   return (
     <group>
       {walls.map((w, i) => (
-        <mesh key={i} position={[w.x, w.y, w.z]}>
+        <mesh key={i} position={[w.x, w.y, w.z]} castShadow receiveShadow>
           <boxGeometry args={[w.w, w.h, w.d]} />
           <meshStandardMaterial color="#c5ccd6" roughness={0.65} />
         </mesh>
@@ -133,6 +138,54 @@ function ZoneMarkers() {
   )
 }
 
+/**
+ * Sun light with a shadow camera fitted to the walkable bounds — a fixed frustum
+ * would either clip the far rooms or waste all its resolution on empty space.
+ */
+function KeyLight() {
+  const scenario = useSimStore((s) => s.scenario)
+  const light = useRef<DirectionalLight>(null)
+  const target = useMemo(() => new Object3D(), [])
+
+  const bounds = useMemo(() => {
+    if (!scenario) return { cx: 0, cz: 0, radius: 20 }
+    const b = computeWalkableBounds(scenario.layout)
+    return {
+      cx: (b.minX + b.maxX) / 2,
+      cz: (b.minZ + b.maxZ) / 2,
+      radius: Math.hypot(b.maxX - b.minX, b.maxZ - b.minZ) / 2 + b.cellSize * 2,
+    }
+  }, [scenario])
+
+  useEffect(() => {
+    target.position.set(bounds.cx, 0, bounds.cz)
+    target.updateMatrixWorld()
+    if (light.current) light.current.target = target
+  }, [bounds, target])
+
+  return (
+    <>
+      <primitive object={target} />
+      <directionalLight
+        ref={light}
+        castShadow
+        position={[bounds.cx + 12, 22, bounds.cz + 14]}
+        intensity={1.15}
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-bias={-0.0005}
+        shadow-normalBias={0.02}
+        shadow-camera-near={1}
+        shadow-camera-far={80}
+        shadow-camera-left={-bounds.radius}
+        shadow-camera-right={bounds.radius}
+        shadow-camera-top={bounds.radius}
+        shadow-camera-bottom={-bounds.radius}
+      />
+    </>
+  )
+}
+
 export function World() {
   const scenario = useSimStore((s) => s.scenario)
   if (!scenario) return null
@@ -140,13 +193,15 @@ export function World() {
   return (
     <>
       <color attach="background" args={['#dbe4ee']} />
-      <ambientLight intensity={0.85} />
-      <directionalLight position={[14, 20, 10]} intensity={0.9} />
-      <hemisphereLight args={['#f8fafc', '#94a3b8', 0.4]} />
+      {/* Ambient pulled back so the sun actually reads as a direction. */}
+      <ambientLight intensity={0.5} />
+      <hemisphereLight args={['#f8fafc', '#8497ad', 0.55]} />
+      <KeyLight />
 
       <Floors />
       <Walls />
       <ZoneMarkers />
+      <AmbientDust />
 
       {scenario.doors.map((d) => (
         <SlidingDoor key={d.id} id={d.id} color={d.color} />
@@ -171,6 +226,9 @@ export function World() {
       ))}
 
       <Robot />
+      <Confetti />
+
+      <Effects />
 
       <OrbitControls
         makeDefault

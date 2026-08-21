@@ -71,9 +71,14 @@ export function KeyVoxel({ id, color }: { id: string; color: string }) {
 
   return (
     <group ref={ref} position={offset}>
-      <mesh>
+      <mesh castShadow>
         <octahedronGeometry args={[0.22, 0]} />
-        <meshStandardMaterial color={hex} emissive={hex} emissiveIntensity={0.7} />
+        <meshStandardMaterial
+          color={hex}
+          emissive={hex}
+          emissiveIntensity={1.7}
+          toneMapped={false}
+        />
       </mesh>
       <FloatingLabel name={id} state={color.toUpperCase()} position={[0, 0.55, 0]} color={hex} />
     </group>
@@ -87,11 +92,11 @@ export function ToolVoxel({ id }: { id: string }) {
   if (!zone || !offset) return null
   return (
     <group position={offset}>
-      <mesh>
+      <mesh castShadow>
         <boxGeometry args={[0.35, 0.2, 0.15]} />
         <meshStandardMaterial color="#94a3b8" metalness={0.6} roughness={0.3} />
       </mesh>
-      <mesh position={[0.15, 0.12, 0]}>
+      <mesh castShadow position={[0.15, 0.12, 0]}>
         <boxGeometry args={[0.1, 0.25, 0.08]} />
         <meshStandardMaterial color="#f97316" />
       </mesh>
@@ -114,7 +119,7 @@ export function MaterialVoxel({ type }: { type: string }) {
   return (
     <group position={offset}>
       {Array.from({ length: Math.min(mat.count, 3) }).map((_, i) => (
-        <mesh key={i} position={[i * 0.12, i * 0.08, 0]}>
+        <mesh key={i} castShadow position={[i * 0.12, i * 0.08, 0]}>
           <boxGeometry args={[0.18, 0.12, 0.18]} />
           <meshStandardMaterial color={hex} emissive={hex} emissiveIntensity={0.3} />
         </mesh>
@@ -133,9 +138,14 @@ export function PanelVoxel({ id }: { id: string }) {
   const hex = state === 'OK' ? COLOR_MAP.blue : COLOR_MAP.red
   return (
     <group position={offset}>
-      <mesh>
+      <mesh castShadow>
         <boxGeometry args={[0.15, 0.7, 0.55]} />
-        <meshStandardMaterial color={hex} emissive={hex} emissiveIntensity={0.55} />
+        <meshStandardMaterial
+          color={hex}
+          emissive={hex}
+          emissiveIntensity={1.25}
+          toneMapped={false}
+        />
       </mesh>
       <FloatingLabel name={id} state={state} position={[0.4, 0.6, 0]} color={hex} />
     </group>
@@ -154,37 +164,52 @@ export function StationVoxel({ id }: { id: string }) {
     <group position={offset}>
       {station.kind === 'generator' && (
         <>
-          <mesh position={[0, 0.45, 0]}>
+          <mesh castShadow position={[0, 0.45, 0]}>
             <cylinderGeometry args={[0.35, 0.4, 0.9, 8]} />
             <meshStandardMaterial color="#64748b" metalness={0.5} />
           </mesh>
           <mesh position={[0, 1.0, 0]}>
             <sphereGeometry args={[0.22, 12, 12]} />
-            <meshStandardMaterial color={hex} emissive={hex} emissiveIntensity={0.9} />
+            <meshStandardMaterial
+              color={hex}
+              emissive={hex}
+              emissiveIntensity={1.9}
+              toneMapped={false}
+            />
           </mesh>
         </>
       )}
       {station.kind === 'command' && (
         <>
-          <mesh position={[0, 0.35, 0]}>
+          <mesh castShadow position={[0, 0.35, 0]}>
             <boxGeometry args={[0.7, 0.7, 0.5]} />
             <meshStandardMaterial color="#475569" />
           </mesh>
           <mesh position={[0, 0.75, 0.1]}>
             <boxGeometry args={[0.5, 0.25, 0.08]} />
-            <meshStandardMaterial color={hex} emissive={hex} emissiveIntensity={0.8} />
+            <meshStandardMaterial
+              color={hex}
+              emissive={hex}
+              emissiveIntensity={1.8}
+              toneMapped={false}
+            />
           </mesh>
         </>
       )}
       {station.kind === 'artillery' && (
         <>
-          <mesh position={[0, 0.25, 0]}>
+          <mesh castShadow position={[0, 0.25, 0]}>
             <boxGeometry args={[0.55, 0.5, 0.55]} />
             <meshStandardMaterial color="#334155" />
           </mesh>
           <mesh position={[0, 0.7, 0]} rotation={[0, 0, Math.PI / 2]}>
             <cylinderGeometry args={[0.08, 0.1, 0.8, 8]} />
-            <meshStandardMaterial color={hex} emissive={hex} emissiveIntensity={0.6} />
+            <meshStandardMaterial
+              color={hex}
+              emissive={hex}
+              emissiveIntensity={1.5}
+              toneMapped={false}
+            />
           </mesh>
         </>
       )}
@@ -205,14 +230,19 @@ export function ChargerVoxel({ id }: { id: string }) {
   if (!charger || !offset) return null
   return (
     <group position={offset}>
-      <mesh position={[0, 0.15, 0]}>
+      <mesh castShadow position={[0, 0.15, 0]}>
         <cylinderGeometry args={[0.35, 0.4, 0.3, 8]} />
         <meshStandardMaterial color="#1e293b" />
       </mesh>
       <group ref={ref} position={[0, 0.55, 0]}>
         <mesh>
           <boxGeometry args={[0.12, 0.35, 0.08]} />
-          <meshStandardMaterial color="#fbbf24" emissive="#f59e0b" emissiveIntensity={1} />
+          <meshStandardMaterial
+            color="#fbbf24"
+            emissive="#f59e0b"
+            emissiveIntensity={1.9}
+            toneMapped={false}
+          />
         </mesh>
         <mesh position={[0.08, -0.12, 0]}>
           <boxGeometry args={[0.2, 0.1, 0.08]} />

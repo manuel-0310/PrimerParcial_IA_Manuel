@@ -6,11 +6,6 @@
 
 ## Planificador Autónomo de Operaciones Críticas
 
-**Modalidad:** Individual
-**Tiempo disponible:** 3 horas
-**Tiempo esperado de resolución:** aproximadamente 90 minutos
-**Uso de herramientas de IA:** Permitido
-
 ---
 
 # 1. PROPÓSITO DEL PARCIAL

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import type { PayloadItem } from '../types'
 import { COLOR_MAP } from '../types'
 import { useSimStore } from '../store/simStore'
@@ -136,6 +137,7 @@ export function BottomControls({
   onReset: () => void
 }) {
   const running = useSimStore((s) => s.running)
+  const solving = useSimStore((s) => s.solving)
   const speed = useSimStore((s) => s.speed)
   const setSpeed = useSimStore((s) => s.setSpeed)
   const setRunning = useSimStore((s) => s.setRunning)
@@ -146,8 +148,18 @@ export function BottomControls({
 
   return (
     <footer className="hud-bottom">
-      <button className="btn btn-primary" onClick={onExecute} disabled={running}>
-        ▶ EXECUTE PLAN
+      <button
+        className="btn btn-primary"
+        onClick={onExecute}
+        disabled={running || solving}
+      >
+        {solving ? (
+          <>
+            <span className="btn-spinner" /> SOLVING (UCS)...
+          </>
+        ) : (
+          '▶ EXECUTE PLAN'
+        )}
       </button>
       <button
         className="btn btn-secondary"
@@ -174,5 +186,57 @@ export function BottomControls({
         ZONE <strong>{zone}</strong> · {zoneName}
       </div>
     </footer>
+  )
+}
+
+/** Top-centred victory banner — stays out of the way so the dance stays visible. */
+export function CelebrationOverlay() {
+  const celebrating = useSimStore((s) => s.celebrating)
+
+  if (!celebrating) return null
+
+  return (
+    <div className="celebration-overlay">
+      <div className="celebration-card">
+        <div className="celebration-title">¡MISIÓN CUMPLIDA!</div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Shown while POST /api/solve is in flight. UCS can run for minutes, so the
+ * elapsed clock matters more than the spinner: without it a long search is
+ * indistinguishable from a frozen app.
+ */
+export function SolvingOverlay() {
+  const solving = useSimStore((s) => s.solving)
+  const [elapsed, setElapsed] = useState(0)
+
+  useEffect(() => {
+    if (!solving) return
+    setElapsed(0)
+    const started = Date.now()
+    const id = setInterval(() => setElapsed(Math.floor((Date.now() - started) / 1000)), 250)
+    return () => clearInterval(id)
+  }, [solving])
+
+  if (!solving) return null
+
+  const mm = String(Math.floor(elapsed / 60)).padStart(2, '0')
+  const ss = String(elapsed % 60).padStart(2, '0')
+
+  return (
+    <div className="solving-overlay">
+      <div className="solving-card">
+        <div className="solving-row">
+          <span className="solving-spinner" />
+          <div className="solving-title">Buscando la solución...</div>
+          <div className="solving-clock">
+            {mm}:{ss}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
